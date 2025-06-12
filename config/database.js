@@ -2,13 +2,17 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
     try {
-        const conn = await mongoose.connect(process.env.MONGODB_URI, {
+        const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/joke_rating_db';
+        console.log('Kobler til database...');
+        
+        await mongoose.connect(mongoURI, {
             useNewUrlParser: true,
             useUnifiedTopology: true
         });
-        console.log(`MongoDB Connected: ${conn.connection.host}`);
+
+        console.log('MongoDB tilkoblet!');
     } catch (error) {
-        console.error(`Error: ${error.message}`);
+        console.error('MongoDB tilkoblingsfeil:', error.message);
         process.exit(1);
     }
 };

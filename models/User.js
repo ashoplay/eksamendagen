@@ -1,16 +1,18 @@
 const mongoose = require('mongoose');
-const argon2 = require('argon2');
+const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
     username: {
         type: String,
         required: true,
         unique: true,
-        trim: true
+        trim: true,
+        minlength: 3
     },
     password: {
         type: String,
-        required: true
+        required: true,
+        minlength: 6
     },
     favorites: [{
         type: mongoose.Schema.Types.ObjectId,
@@ -22,23 +24,23 @@ const userSchema = new mongoose.Schema({
     }
 });
 
+// Hash passordet før lagring
 userSchema.pre('save', async function(next) {
-    if (!this.isModified('password')) return next();
-    try {
-        this.password = await argon2.hash(this.password);
-        next();
-    } catch (error) {
-        next(error);
+    if (this.isModified('password')) {
+        this.password = await bcrypt.hash(this.password, 10);
     }
+    next();
 });
 
+// Metode for å sammenligne passord
 userSchema.methods.comparePassword = async function(candidatePassword) {
     try {
-        return await argon2.verify(this.password, candidatePassword);
+        return await bcrypt.compare(candidatePassword, this.password);
     } catch (error) {
-        throw error;
+        throw new Error('Feil ved passordsammenligning');
     }
 };
 
 const User = mongoose.model('User', userSchema);
+
 module.exports = User; 

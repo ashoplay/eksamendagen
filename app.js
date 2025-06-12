@@ -87,15 +87,52 @@ app.get('/register', (req, res) => {
 
 app.post('/register', async (req, res) => {
     try {
-        const user = new User({
-            username: req.body.username,
-            password: req.body.password
-        });
+        const { username, password, confirmPassword } = req.body;
+
+        // Valider input
+        if (!username || !password) {
+            return res.render('register', { 
+                error: 'Vennligst fyll ut alle feltene',
+                title: 'Registrer'
+            });
+        }
+
+        if (password.length < 6) {
+            return res.render('register', { 
+                error: 'Passordet må være minst 6 tegn',
+                title: 'Registrer'
+            });
+        }
+
+        if (password !== confirmPassword) {
+            return res.render('register', { 
+                error: 'Passordene matcher ikke',
+                title: 'Registrer'
+            });
+        }
+
+        // Sjekk om brukeren allerede eksisterer
+        const existingUser = await User.findOne({ username });
+        if (existingUser) {
+            return res.render('register', { 
+                error: 'Brukernavnet er allerede i bruk',
+                title: 'Registrer'
+            });
+        }
+
+        // Opprett ny bruker
+        const user = new User({ username, password });
         await user.save();
+
+        // Logg inn brukeren
         req.session.userId = user._id;
         res.redirect('/jokes');
     } catch (error) {
-        res.render('register', { error: 'Username already taken', title: 'Register' });
+        console.error('Registreringsfeil:', error);
+        res.render('register', { 
+            error: 'Det oppstod en feil ved registrering. Vennligst prøv igjen.',
+            title: 'Registrer'
+        });
     }
 });
 
@@ -105,15 +142,42 @@ app.get('/login', (req, res) => {
 
 app.post('/login', async (req, res) => {
     try {
-        const user = await User.findOne({ username: req.body.username });
-        if (user && await user.comparePassword(req.body.password)) {
-            req.session.userId = user._id;
-            res.redirect('/jokes');
-        } else {
-            res.render('login', { error: 'Invalid username or password', title: 'Login' });
+        const { username, password } = req.body;
+
+        // Valider input
+        if (!username || !password) {
+            return res.render('login', { 
+                error: 'Vennligst fyll ut alle feltene',
+                title: 'Logg inn'
+            });
         }
+
+        // Finn bruker og sjekk passord
+        const user = await User.findOne({ username });
+        if (!user) {
+            return res.render('login', { 
+                error: 'Feil brukernavn eller passord',
+                title: 'Logg inn'
+            });
+        }
+
+        const isValidPassword = await user.comparePassword(password);
+        if (!isValidPassword) {
+            return res.render('login', { 
+                error: 'Feil brukernavn eller passord',
+                title: 'Logg inn'
+            });
+        }
+
+        // Logg inn brukeren
+        req.session.userId = user._id;
+        res.redirect('/jokes');
     } catch (error) {
-        res.render('login', { error: 'An error occurred', title: 'Login' });
+        console.error('Innloggingsfeil:', error);
+        res.render('login', { 
+            error: 'Det oppstod en feil ved innlogging. Vennligst prøv igjen.',
+            title: 'Logg inn'
+        });
     }
 });
 
