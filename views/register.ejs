@@ -2,21 +2,27 @@
 
 <div class="auth-container">
     <div class="auth-box">
-        <h2>Register</h2>
+        <h2>Registrer ny konto</h2>
         <% if (typeof error !== 'undefined') { %>
             <div class="error-message"><%= error %></div>
         <% } %>
         <form action="/register" method="POST">
             <div class="form-group">
-                <label for="username">Username</label>
+                <label for="username">Brukernavn</label>
                 <input type="text" id="username" name="username" required>
             </div>
             <div class="form-group">
-                <label for="password">Password</label>
+                <label for="password">Passord</label>
                 <input type="password" id="password" name="password" required>
             </div>
-            <button type="submit">Register</button>
+            <div class="form-group">
+                <label for="confirmPassword">Bekreft passord</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required>
+            </div>
+            <button type="submit">Registrer</button>
         </form>
-        <p class="auth-link">Already have an account? <a href="/login">Login</a></p>
+        <div class="auth-link">
+            Har du allerede en konto? <a href="/login">Logg inn her</a>
+        </div>
     </div>
 </div> 
