@@ -153,8 +153,10 @@ button:disabled {
 .joke-container {
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     min-height: calc(100vh - 200px);
+    padding: 2rem 1rem;
+    width: 100%;
 }
 
 .joke-card {
@@ -163,6 +165,8 @@ button:disabled {
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     margin: 1rem;
+    width: 100%;
+    max-width: 800px;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 

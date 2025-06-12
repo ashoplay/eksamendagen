@@ -15,7 +15,12 @@ const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 
 // Connect to MongoDB
-connectDB();
+connectDB().then(() => {
+    console.log('MongoDB connected successfully');
+}).catch(err => {
+    console.error('MongoDB connection error:', err);
+    process.exit(1);
+});
 
 // Middleware
 app.use(express.json());
@@ -32,18 +37,31 @@ const sessionMiddleware = session({
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({
-        mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/joke_rating_db'
+        mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/joke_rating_db',
+        ttl: 24 * 60 * 60, // Session TTL (1 day)
+        autoRemove: 'native'
     }),
     cookie: {
-        maxAge: 1000 * 60 * 60 * 24 // 24 hours
+        maxAge: 1000 * 60 * 60 * 24, // 24 hours
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
     }
 });
 
 app.use(sessionMiddleware);
 
 // Make user data available to all templates
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
     res.locals.isAuthenticated = !!req.session.userId;
+    if (req.session.userId) {
+        try {
+            const user = await User.findById(req.session.userId);
+            res.locals.user = user;
+        } catch (error) {
+            console.error('Error fetching user:', error);
+            res.locals.user = null;
+        }
+    }
     next();
 });
 

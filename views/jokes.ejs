@@ -1,5 +1,5 @@
 <div class="joke-container">
-    <% if (typeof error !== 'undefined') { %>
+    <% if (typeof error !== 'undefined' && error) { %>
         <div class="error-message"><%= error %></div>
     <% } else { %>
         <div class="joke-card">
@@ -77,155 +77,121 @@
 </div>
 
 <style>
-.favorite-container {
-    display: flex;
-    align-items: center;
-    margin-bottom: 1rem;
-}
+    .joke-container {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        min-height: calc(100vh - 200px);
+        padding: 2rem 1rem;
+        width: 100%;
+    }
 
-.favorite-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    background: none;
-    border: 2px solid var(--heart-color);
-    color: var(--heart-color);
-    transition: all 0.3s ease;
-}
+    .joke-card {
+        background-color: var(--card-background);
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin: 1rem;
+        width: 100%;
+        max-width: 800px;
+    }
 
-.favorite-btn:hover, .favorite-btn.active {
-    background-color: var(--heart-color);
-    color: white;
-}
+    .joke-setup {
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+        color: var(--text-color);
+        line-height: 1.4;
+    }
 
-.favorite-text {
-    font-size: 0.9rem;
-    font-weight: 500;
-}
+    .joke-punchline {
+        color: var(--text-color);
+        font-size: 1.25rem;
+        margin: 1.5rem 0;
+        line-height: 1.4;
+    }
 
-.emoji-rating {
-    display: flex;
-    justify-content: center;
-    gap: 1.5rem;
-    margin: 1rem 0;
-}
+    .reveal-btn {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 1rem 0;
+    }
 
-.emoji-group {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.25rem;
-}
+    .reveal-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
 
-.rating-points {
-    font-size: 0.8rem;
-    color: var(--text-color);
-    opacity: 0.8;
-}
+    .hidden {
+        display: none;
+    }
 
-.rating-stats {
-    text-align: center;
-    margin-top: 1rem;
-    padding: 1rem;
-    background-color: rgba(0, 0, 0, 0.05);
-    border-radius: 8px;
-    display: <%= totalRatings > 0 ? 'block' : 'none' %>;
-}
+    #punchline-text {
+        opacity: 0;
+        animation: fadeIn 0.5s ease forwards;
+    }
 
-.rating-value {
-    font-weight: bold;
-    color: var(--accent-color);
-}
-
-.rating-count {
-    font-size: 0.9rem;
-    color: var(--text-color);
-    opacity: 0.8;
-    margin-top: 0.5rem;
-}
-
-/* Add styles for disabled button */
-button:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-}
-
-/* Add animation for rating update */
-@keyframes bounce {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-}
-
-/* Add highlight animation for rating updates */
-@keyframes highlight {
-    0% { background-color: var(--accent-color); color: white; }
-    100% { background-color: rgba(0, 0, 0, 0.05); color: var(--text-color); }
-}
-
-.highlight {
-    animation: highlight 1s ease-out;
-}
-
-.rating-stats {
-    transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-/* Add styles for error messages */
-.error-message {
-    background-color: #ffebee;
-    color: #c62828;
-    padding: 1rem;
-    margin: 1rem 0;
-    border-radius: 4px;
-    text-align: center;
-}
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
 </style>
 
 <script>
-    // Bare initialiser Socket.IO og join room hvis vi har en gyldig vits
-    const socket = io();
-    
-    socket.on('connect', () => {
-        console.log('Socket.IO tilkoblet');
-        if ('<%= joke._id %>' !== '') {
-            joinJokeRoom();
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Socket.IO
+        const socket = io();
+        
+        socket.on('connect', () => {
+            console.log('Socket.IO connected');
+            const jokeId = '<%= joke._id %>';
+            if (jokeId) {
+                joinJokeRoom(jokeId);
+            }
+        });
+
+        socket.on('connect_error', (error) => {
+            console.error('Socket.IO connection error:', error);
+        });
+
+        // Set initial rating if user has rated before
+        const initialRating = '<%= userRating %>';
+        const userRating = initialRating !== '' ? parseInt(initialRating) : 0;
+        window.currentRating = userRating;
+
+        if (userRating > 0) {
+            document.querySelectorAll('.emoji-btn').forEach(btn => {
+                if (parseInt(btn.dataset.rating) === userRating) {
+                    btn.classList.add('selected');
+                }
+            });
         }
+
+        // Listen for rating updates
+        socket.on('rating update', function(data) {
+            if (data.jokeId === '<%= joke._id %>') {
+                updateRatingDisplay(data.averageRating, data.totalRatings);
+            }
+        });
     });
 
-    socket.on('connect_error', (error) => {
-        console.error('Socket.IO tilkoblingsfeil:', error);
-    });
-
-    function joinJokeRoom() {
-        const jokeId = '<%= joke._id %>';
-        if (jokeId) {
-            console.log('Blir med i vitserom:', jokeId);
-            socket.emit('join joke room', jokeId);
-        }
+    function joinJokeRoom(jokeId) {
+        socket.emit('join joke room', jokeId);
     }
-
-    // Listen for rating updates
-    socket.on('rating update', function(data) {
-        console.log('Mottok vurderingsoppdatering:', data);
-        if (data.jokeId === '<%= joke._id %>') {
-            console.log('Oppdaterer visning med nye vurderingsdata');
-            updateRatingDisplay(data.averageRating, data.totalRatings);
-        }
-    });
 
     function revealPunchline() {
         document.getElementById('punchline-text').classList.remove('hidden');
         document.getElementById('reveal-btn').classList.add('hidden');
     }
 
-    const currentRating = <%= typeof userRating === 'number' ? userRating : 3 %>;
-    console.log('Initial vurdering:', currentRating);
-    window.currentRating = currentRating;
-    
     function setRating(rating) {
-        console.log('Setter vurdering til:', rating);
         window.currentRating = rating;
         document.querySelectorAll('.emoji-btn').forEach(btn => {
             btn.classList.remove('selected');
@@ -235,8 +201,35 @@ button:disabled {
         });
     }
 
+    async function submitRating(jokeId) {
+        try {
+            const response = await fetch('/rate-joke', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    jokeId,
+                    rating: window.currentRating
+                })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                updateRatingDisplay(data.averageRating, data.totalRatings);
+                const ratingStats = document.getElementById('rating-stats');
+                ratingStats.classList.add('highlight');
+                setTimeout(() => ratingStats.classList.remove('highlight'), 1000);
+            } else {
+                alert('Could not save rating. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error submitting rating:', error);
+            alert('Could not save rating. Please try again.');
+        }
+    }
+
     function updateRatingDisplay(averageRating, totalRatings) {
-        console.log('Oppdaterer vurderingsvisning:', { averageRating, totalRatings });
         const ratingStats = document.getElementById('rating-stats');
         const formattedAverage = Number(averageRating).toFixed(1);
         
@@ -247,95 +240,44 @@ button:disabled {
             <div class="rating-count">(${totalRatings} vurdering${totalRatings !== 1 ? 'er' : ''})</div>
         `;
         
-        ratingStats.style.display = 'block';
-        ratingStats.classList.remove('highlight');
-        void ratingStats.offsetWidth;
-        ratingStats.classList.add('highlight');
+        ratingStats.style.display = totalRatings > 0 ? 'block' : 'none';
     }
 
-    function submitRating(jokeId) {
-        if (!window.currentRating) {
-            console.error('Ingen vurdering valgt');
-            alert('Vennligst velg en vurdering først');
-            return;
-        }
-
-        console.log('Sender vurdering:', { jokeId, rating: window.currentRating });
-        const rateBtn = document.getElementById('rate-btn');
-        rateBtn.disabled = true;
-        rateBtn.textContent = 'Sender...';
-
-        fetch('/rate-joke', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                jokeId: jokeId,
-                rating: window.currentRating
-            })
-        })
-        .then(response => {
-            console.log('Mottok svar:', response.status);
-            return response.json().then(data => {
-                if (!response.ok) {
-                    throw new Error(data.error || `HTTP-feil! status: ${response.status}`);
-                }
-                return data;
+    async function toggleFavorite(jokeId) {
+        try {
+            const response = await fetch('/toggle-favorite', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ jokeId })
             });
-        })
-        .then(data => {
-            console.log('Vurdering sendt:', data);
-            if (data.success) {
-                updateRatingDisplay(data.averageRating, data.totalRatings);
-                rateBtn.textContent = 'Vurdering sendt!';
-                setTimeout(() => {
-                    rateBtn.textContent = 'Oppdater vurdering';
-                    rateBtn.disabled = false;
-                }, 2000);
-            } else {
-                throw new Error(data.error || 'Ukjent feil oppstod');
-            }
-        })
-        .catch(error => {
-            console.error('Feil ved sending av vurdering:', error);
-            rateBtn.textContent = 'Kunne ikke sende';
-            alert(`Feil: ${error.message}`);
-            setTimeout(() => {
-                rateBtn.textContent = 'Send vurdering';
-                rateBtn.disabled = false;
-            }, 2000);
-        });
-    }
 
-    function toggleFavorite(jokeId) {
-        fetch('/toggle-favorite', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ jokeId })
-        })
-        .then(response => response.json())
-        .then(data => {
+            const data = await response.json();
             if (data.success) {
-                const favoriteBtn = document.querySelector('.favorite-btn');
-                favoriteBtn.classList.toggle('active');
+                const btn = document.querySelector('.favorite-btn');
+                btn.classList.toggle('active');
+            } else {
+                alert('Could not update favorites. Please try again.');
             }
-        });
+        } catch (error) {
+            console.error('Error toggling favorite:', error);
+            alert('Could not update favorites. Please try again.');
+        }
     }
 
     function shareJoke(platform) {
         const setup = '<%= joke.setup %>';
         const punchline = '<%= joke.punchline %>';
-        const text = `${setup}\n\n${punchline}\n\nDelt fra Vitsevurdering`;
+        const text = `${setup}\n\n${punchline}`;
         
         if (platform === 'twitter') {
-            window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`);
+            const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+            window.open(twitterUrl, '_blank');
         } else if (platform === 'copy') {
-            navigator.clipboard.writeText(text).then(() => {
-                alert('Vits kopiert til utklippstavlen!');
-            });
+            navigator.clipboard.writeText(text)
+                .then(() => alert('Vits kopiert til utklippstavlen!'))
+                .catch(() => alert('Kunne ikke kopiere vits. Vennligst prøv igjen.'));
         }
     }
 </script> 
