@@ -143,29 +143,46 @@ app.get('/jokes', async (req, res) => {
         if (req.session.userId) {
             const user = await User.findById(req.session.userId);
             isFavorite = user.favorites.includes(joke._id);
-            const ratingObj = joke.ratings.find(r => r.user.toString() === req.session.userId);
-            userRating = ratingObj ? ratingObj.score : null;
+            const rating = await Rating.findOne({ 
+                jokeId: joke._id, 
+                userId: req.session.userId 
+            });
+            userRating = rating ? rating.rating : null;
         }
 
-        const ratingStats = joke.getRatingStats();
+        // Hent vurderingsstatistikk
+        const ratings = await Rating.find({ jokeId: joke._id });
+        const totalRatings = ratings.length;
+        const averageRating = totalRatings > 0
+            ? ratings.reduce((sum, r) => sum + r.rating, 0) / totalRatings
+            : 0;
 
         res.render('jokes', { 
             joke,
             userRating,
             isFavorite,
-            averageRating: ratingStats.averageRating,
-            totalRatings: ratingStats.totalRatings,
-            title: 'Random Joke'
+            averageRating,
+            totalRatings,
+            title: 'Tilfeldig vits',
+            error: null
         });
     } catch (error) {
-        console.error('Error fetching joke:', error);
+        console.error('Feil ved henting av vits:', error);
+        // Opprett en tom vits-objekt for å unngå undefined error
+        const emptyJoke = {
+            _id: '',
+            setup: '',
+            punchline: ''
+        };
+        
         res.render('jokes', { 
-            error: 'Failed to fetch joke', 
-            title: 'Error',
+            error: 'Kunne ikke hente vits. Vennligst prøv igjen senere.',
+            joke: emptyJoke,
             userRating: null,
             isFavorite: false,
             averageRating: 0,
-            totalRatings: 0
+            totalRatings: 0,
+            title: 'Feil'
         });
     }
 });

@@ -184,13 +184,14 @@ button:disabled {
 </style>
 
 <script>
-    // Initialize Socket.IO first
+    // Bare initialiser Socket.IO og join room hvis vi har en gyldig vits
     const socket = io();
-
-    // Debug logging for Socket.IO
+    
     socket.on('connect', () => {
         console.log('Socket.IO tilkoblet');
-        joinJokeRoom();
+        if ('<%= joke._id %>' !== '') {
+            joinJokeRoom();
+        }
     });
 
     socket.on('connect_error', (error) => {
@@ -199,8 +200,10 @@ button:disabled {
 
     function joinJokeRoom() {
         const jokeId = '<%= joke._id %>';
-        console.log('Blir med i vitserom:', jokeId);
-        socket.emit('join joke room', jokeId);
+        if (jokeId) {
+            console.log('Blir med i vitserom:', jokeId);
+            socket.emit('join joke room', jokeId);
+        }
     }
 
     // Listen for rating updates
