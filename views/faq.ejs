@@ -1,0 +1,90 @@
+<div class="faq-container">
+    <h1>Ofte stilte spørsmål</h1>
+    
+    <div class="faq-list">
+        <div class="faq-item">
+            <h3>Hvordan fungerer vitsevurderingen?</h3>
+            <p>Du kan vurdere vitser på en skala fra 1 til 5, der 1 er "Ikke morsom" og 5 er "Kjempemorsom". Vurderingen vises med emojis for å gjøre det mer intuitivt.</p>
+        </div>
+
+        <div class="faq-item">
+            <h3>Kan jeg lagre mine favoritt-vitser?</h3>
+            <p>Ja! Når du er logget inn, kan du klikke på hjerte-ikonet ved siden av en vits for å lagre den som favoritt. Du finner alle dine lagrede vitser under "Favoritter" i menyen.</p>
+        </div>
+
+        <div class="faq-item">
+            <h3>Hvorfor må jeg registrere meg?</h3>
+            <p>Registrering er nødvendig for å kunne vurdere vitser og lagre favoritter. Dette hjelper oss også med å holde oversikt over vurderinger og gi deg en personlig opplevelse.</p>
+        </div>
+
+        <div class="faq-item">
+            <h3>Hvordan deler jeg en vits?</h3>
+            <p>Under hver vits finner du delingsknapper. Du kan dele direkte på Twitter eller kopiere vitsen til utklippstavlen for å dele den hvor som helst.</p>
+        </div>
+
+        <div class="faq-item">
+            <h3>Hvor kommer vitsene fra?</h3>
+            <p>Vitsene hentes fra et åpent API med engelske vitser. Vi jobber med å legge til flere norske vitser i fremtiden!</p>
+        </div>
+
+        <div class="faq-item">
+            <h3>Jeg har funnet en feil, hvordan rapporterer jeg den?</h3>
+            <p>Send oss gjerne en e-post på support@vitsevurdering.no, så skal vi se på det så fort som mulig.</p>
+        </div>
+    </div>
+</div>
+
+<style>
+.faq-container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.faq-container h1 {
+    color: var(--text-color);
+    text-align: center;
+    margin-bottom: 2rem;
+    font-size: 2rem;
+}
+
+.faq-list {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.faq-item {
+    background-color: var(--card-background);
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.faq-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.faq-item h3 {
+    color: var(--accent-color);
+    margin-bottom: 0.75rem;
+    font-size: 1.2rem;
+}
+
+.faq-item p {
+    color: var(--text-color);
+    line-height: 1.6;
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .faq-container {
+        margin: 1rem auto;
+    }
+
+    .faq-item {
+        padding: 1rem;
+    }
+}
+</style> 

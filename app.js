@@ -289,6 +289,14 @@ app.get('/favorites', isAuthenticated, async (req, res) => {
     }
 });
 
+// FAQ route
+app.get('/faq', (req, res) => {
+    res.render('faq', {
+        title: 'Ofte stilte spørsmål',
+        isAuthenticated: !!req.session.userId
+    });
+});
+
 // Update server creation
 const PORT = process.env.PORT || 3000;
 http.listen(PORT, () => {
