@@ -24,7 +24,8 @@
     "express-ejs-layouts": "^2.5.1",
     "express-session": "^1.17.3",
     "mongoose": "^7.5.0",
-    "node-fetch": "^2.6.12"
+    "node-fetch": "^2.6.12",
+    "socket.io": "^4.8.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"

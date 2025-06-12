@@ -3,33 +3,346 @@
         <div class="error-message"><%= error %></div>
     <% } else { %>
         <div class="joke-card">
+            <div class="joke-header">
+                <% if (isAuthenticated) { %>
+                    <div class="favorite-container">
+                        <button class="favorite-btn <%= isFavorite ? 'active' : '' %>" onclick="toggleFavorite('<%= joke._id %>')">
+                            <i class="fas fa-heart"></i>
+                            <span class="favorite-text">Favorite</span>
+                        </button>
+                    </div>
+                <% } %>
+            </div>
             <div class="joke-setup">
                 <%= joke.setup %>
             </div>
             <div class="joke-punchline" id="punchline">
-                <button onclick="revealPunchline()" id="reveal-btn">Reveal Punchline</button>
+                <button onclick="revealPunchline()" id="reveal-btn" class="reveal-btn">
+                    <i class="fas fa-lightbulb"></i> Reveal Punchline
+                </button>
                 <p class="hidden" id="punchline-text"><%= joke.punchline %></p>
             </div>
             <div class="rating-section">
                 <% if (isAuthenticated) { %>
-                    <div class="rating-slider">
-                        <label for="rating">Rate this joke (1-10):</label>
-                        <input type="range" id="rating" min="1" max="10" value="<%= userRating || 5 %>" step="1">
-                        <span id="rating-value"><%= userRating || 5 %></span>
+                    <div class="emoji-rating">
+                        <div class="emoji-group">
+                            <button class="emoji-btn" data-rating="1" onclick="setRating(1)">😢</button>
+                            <span class="rating-points">1 pt</span>
+                        </div>
+                        <div class="emoji-group">
+                            <button class="emoji-btn" data-rating="2" onclick="setRating(2)">😕</button>
+                            <span class="rating-points">2 pts</span>
+                        </div>
+                        <div class="emoji-group">
+                            <button class="emoji-btn" data-rating="3" onclick="setRating(3)">😊</button>
+                            <span class="rating-points">3 pts</span>
+                        </div>
+                        <div class="emoji-group">
+                            <button class="emoji-btn" data-rating="4" onclick="setRating(4)">😄</button>
+                            <span class="rating-points">4 pts</span>
+                        </div>
+                        <div class="emoji-group">
+                            <button class="emoji-btn" data-rating="5" onclick="setRating(5)">🤣</button>
+                            <span class="rating-points">5 pts</span>
+                        </div>
                     </div>
-                    <button onclick="submitRating('<%= joke._id %>')" id="rate-btn">Submit Rating</button>
-                    <div class="average-rating" id="average-rating">
-                        <% if (joke.ratings && joke.ratings.length > 0) { %>
-                            Average Rating: <%= joke.averageRating %>
-                        <% } %>
+                    <button onclick="submitRating('<%= joke._id %>')" id="rate-btn">
+                        <%= userRating ? 'Update Rating' : 'Submit Rating' %>
+                    </button>
+                    <div class="rating-stats" id="rating-stats">
+                        <div class="average-rating">
+                            Average Rating: <span class="rating-value"><%= Number(averageRating).toFixed(1) %> points</span>
+                        </div>
+                        <div class="rating-count">(<%= totalRatings %> rating<%= totalRatings !== 1 ? 's' : '' %>)</div>
                     </div>
                 <% } else { %>
                     <p class="login-prompt">
-                        <a href="/login">Login</a> or <a href="/register">Register</a> to rate jokes and see average ratings!
+                        <a href="/login">Login</a> or <a href="/register">Register</a> to rate jokes and save favorites!
                     </p>
                 <% } %>
             </div>
-            <button onclick="location.reload()" class="next-joke-btn">Next Joke</button>
+            <div class="share-buttons">
+                <button class="share-btn" onclick="shareJoke('twitter')">
+                    <i class="fab fa-twitter"></i> Tweet
+                </button>
+                <button class="share-btn" onclick="shareJoke('copy')">
+                    <i class="fas fa-copy"></i> Copy
+                </button>
+            </div>
+            <button onclick="location.reload()" class="next-joke-btn">
+                <i class="fas fa-forward"></i> Next Joke
+            </button>
         </div>
     <% } %>
-</div> 
+</div>
+
+<style>
+.favorite-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.favorite-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    background: none;
+    border: 2px solid var(--heart-color);
+    color: var(--heart-color);
+    transition: all 0.3s ease;
+}
+
+.favorite-btn:hover, .favorite-btn.active {
+    background-color: var(--heart-color);
+    color: white;
+}
+
+.favorite-text {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.emoji-rating {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin: 1rem 0;
+}
+
+.emoji-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.rating-points {
+    font-size: 0.8rem;
+    color: var(--text-color);
+    opacity: 0.8;
+}
+
+.rating-stats {
+    text-align: center;
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+    display: <%= totalRatings > 0 ? 'block' : 'none' %>;
+}
+
+.rating-value {
+    font-weight: bold;
+    color: var(--accent-color);
+}
+
+.rating-count {
+    font-size: 0.9rem;
+    color: var(--text-color);
+    opacity: 0.8;
+    margin-top: 0.5rem;
+}
+
+/* Add styles for disabled button */
+button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Add animation for rating update */
+@keyframes bounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+/* Add highlight animation for rating updates */
+@keyframes highlight {
+    0% { background-color: var(--accent-color); color: white; }
+    100% { background-color: rgba(0, 0, 0, 0.05); color: var(--text-color); }
+}
+
+.highlight {
+    animation: highlight 1s ease-out;
+}
+
+.rating-stats {
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Add styles for error messages */
+.error-message {
+    background-color: #ffebee;
+    color: #c62828;
+    padding: 1rem;
+    margin: 1rem 0;
+    border-radius: 4px;
+    text-align: center;
+}
+</style>
+
+<script>
+    // Initialize Socket.IO first
+    const socket = io();
+
+    // Debug logging for Socket.IO
+    socket.on('connect', () => {
+        console.log('Socket.IO connected');
+        joinJokeRoom();
+    });
+
+    socket.on('connect_error', (error) => {
+        console.error('Socket.IO connection error:', error);
+    });
+
+    function joinJokeRoom() {
+        const jokeId = '<%= joke._id %>';
+        console.log('Joining joke room:', jokeId);
+        socket.emit('join joke room', jokeId);
+    }
+
+    // Listen for rating updates
+    socket.on('rating update', function(data) {
+        console.log('Received rating update:', data);
+        if (data.jokeId === '<%= joke._id %>') {
+            console.log('Updating display with new rating data');
+            updateRatingDisplay(data.averageRating, data.totalRatings);
+        }
+    });
+
+    function revealPunchline() {
+        document.getElementById('punchline-text').classList.remove('hidden');
+        document.getElementById('reveal-btn').classList.add('hidden');
+    }
+
+    const currentRating = <%= typeof userRating === 'number' ? userRating : 3 %>;
+    console.log('Initial rating:', currentRating);
+    window.currentRating = currentRating; // Store rating in window object
+    
+    function setRating(rating) {
+        console.log('Setting rating to:', rating);
+        window.currentRating = rating;
+        document.querySelectorAll('.emoji-btn').forEach(btn => {
+            btn.classList.remove('selected');
+            if (parseInt(btn.dataset.rating) === rating) {
+                btn.classList.add('selected');
+            }
+        });
+    }
+
+    function updateRatingDisplay(averageRating, totalRatings) {
+        console.log('Updating rating display:', { averageRating, totalRatings });
+        const ratingStats = document.getElementById('rating-stats');
+        const formattedAverage = Number(averageRating).toFixed(1);
+        
+        ratingStats.innerHTML = `
+            <div class="average-rating">
+                Average Rating: <span class="rating-value">${formattedAverage} points</span>
+            </div>
+            <div class="rating-count">(${totalRatings} rating${totalRatings !== 1 ? 's' : ''})</div>
+        `;
+        
+        // Add highlight animation
+        ratingStats.style.display = 'block';
+        ratingStats.classList.remove('highlight');
+        void ratingStats.offsetWidth; // Trigger reflow
+        ratingStats.classList.add('highlight');
+    }
+
+    function submitRating(jokeId) {
+        if (!window.currentRating) {
+            console.error('No rating selected');
+            alert('Please select a rating first');
+            return;
+        }
+
+        console.log('Submitting rating:', { jokeId, rating: window.currentRating });
+        const rateBtn = document.getElementById('rate-btn');
+        rateBtn.disabled = true;
+        rateBtn.textContent = 'Submitting...';
+
+        fetch('/rate-joke', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                jokeId: jokeId,
+                rating: window.currentRating
+            })
+        })
+        .then(response => {
+            console.log('Received response:', response.status);
+            return response.json().then(data => {
+                if (!response.ok) {
+                    throw new Error(data.error || `HTTP error! status: ${response.status}`);
+                }
+                return data;
+            });
+        })
+        .then(data => {
+            console.log('Rating submission successful:', data);
+            if (data.success) {
+                updateRatingDisplay(data.averageRating, data.totalRatings);
+                rateBtn.textContent = 'Rating Submitted!';
+                setTimeout(() => {
+                    rateBtn.textContent = 'Update Rating';
+                    rateBtn.disabled = false;
+                }, 2000);
+            } else {
+                throw new Error(data.error || 'Unknown error occurred');
+            }
+        })
+        .catch(error => {
+            console.error('Rating submission error:', error);
+            rateBtn.textContent = 'Failed to Submit';
+            alert(`Error: ${error.message}`);
+            setTimeout(() => {
+                rateBtn.textContent = 'Submit Rating';
+                rateBtn.disabled = false;
+            }, 2000);
+        });
+    }
+
+    // Initialize rating display if we have data
+    if (typeof averageRating !== 'undefined' && typeof totalRatings !== 'undefined') {
+        console.log('Initializing rating display with:', { averageRating, totalRatings });
+        updateRatingDisplay(averageRating, totalRatings);
+    }
+
+    // Set initial rating if exists
+    setRating(currentRating);
+
+    function toggleFavorite(jokeId) {
+        fetch('/toggle-favorite', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ jokeId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const favoriteBtn = document.querySelector('.favorite-btn');
+                favoriteBtn.classList.toggle('active');
+            }
+        });
+    }
+
+    function shareJoke(platform) {
+        const setup = '<%= joke.setup %>';
+        const punchline = '<%= joke.punchline %>';
+        const text = `${setup}\n\n${punchline}\n\nShared from Joke Rater`;
+        
+        if (platform === 'twitter') {
+            window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`);
+        } else if (platform === 'copy') {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Joke copied to clipboard!');
+            });
+        }
+    }
+</script> 

@@ -1,0 +1,176 @@
+<div class="favorites-container">
+    <h1 class="page-title">My Favorite Jokes</h1>
+    
+    <% if (typeof error !== 'undefined') { %>
+        <div class="error-message"><%= error %></div>
+    <% } else if (jokes.length === 0) { %>
+        <div class="empty-state">
+            <i class="fas fa-heart-broken"></i>
+            <p>You haven't saved any favorite jokes yet!</p>
+            <a href="/jokes" class="btn">Find Some Jokes</a>
+        </div>
+    <% } else { %>
+        <div class="favorites-grid">
+            <% jokes.forEach(joke => { %>
+                <div class="joke-card favorite-card">
+                    <div class="joke-header">
+                        <div class="favorite-container">
+                            <button class="favorite-btn active" onclick="toggleFavorite('<%= joke._id %>', this)">
+                                <i class="fas fa-heart"></i>
+                                <span class="favorite-text">Favorite</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="joke-setup">
+                        <%= joke.setup %>
+                    </div>
+                    <div class="joke-punchline">
+                        <p><%= joke.punchline %></p>
+                    </div>
+                    <div class="share-buttons">
+                        <button class="share-btn" onclick="shareJoke('<%= joke.setup %>', '<%= joke.punchline %>', 'twitter')">
+                            <i class="fab fa-twitter"></i> Tweet
+                        </button>
+                        <button class="share-btn" onclick="shareJoke('<%= joke.setup %>', '<%= joke.punchline %>', 'copy')">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                    </div>
+                </div>
+            <% }); %>
+        </div>
+    <% } %>
+</div>
+
+<style>
+.favorites-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+.page-title {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: var(--text-color);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    background: var(--card-background);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.empty-state i {
+    font-size: 4rem;
+    color: var(--heart-color);
+    margin-bottom: 1rem;
+}
+
+.empty-state p {
+    margin-bottom: 1.5rem;
+    color: var(--text-color);
+}
+
+.btn {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background-color: var(--accent-color);
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: transform 0.2s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+}
+
+.favorites-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.favorite-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.favorite-card .joke-punchline {
+    margin: 1rem 0;
+    flex-grow: 1;
+}
+
+@media (max-width: 768px) {
+    .favorites-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.favorite-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.favorite-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    background: none;
+    border: 2px solid var(--heart-color);
+    color: var(--heart-color);
+    transition: all 0.3s ease;
+}
+
+.favorite-btn:hover, .favorite-btn.active {
+    background-color: var(--heart-color);
+    color: white;
+}
+
+.favorite-text {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+</style>
+
+<script>
+function toggleFavorite(jokeId, button) {
+    fetch('/toggle-favorite', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ jokeId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            button.closest('.joke-card').style.animation = 'fadeOut 0.5s ease forwards';
+            setTimeout(() => {
+                button.closest('.joke-card').remove();
+                if (document.querySelectorAll('.joke-card').length === 0) {
+                    location.reload();
+                }
+            }, 500);
+        }
+    });
+}
+
+function shareJoke(setup, punchline, platform) {
+    const text = `${setup}\n\n${punchline}\n\nShared from Joke Rater`;
+    
+    if (platform === 'twitter') {
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`);
+    } else if (platform === 'copy') {
+        navigator.clipboard.writeText(text).then(() => {
+            alert('Joke copied to clipboard!');
+        });
+    }
+}
+</script> 

@@ -1,10 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= typeof title !== 'undefined' ? title + ' - Joke Rater' : 'Joke Rater' %></title>
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
     <nav>
@@ -13,6 +15,7 @@
             <div class="nav-links">
                 <% if (isAuthenticated) { %>
                     <a href="/jokes">Jokes</a>
+                    <a href="/favorites"><i class="fas fa-heart"></i> Favorites</a>
                     <a href="/logout">Logout</a>
                 <% } else { %>
                     <a href="/login">Login</a>
@@ -24,6 +27,10 @@
     <main>
         <%- body %>
     </main>
+    <script>
+        // Initialize Socket.IO
+        const socket = io();
+    </script>
     <script src="/js/main.js"></script>
 </body>
 </html> 
