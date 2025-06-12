@@ -8,6 +8,7 @@ const expressLayouts = require('express-ejs-layouts');
 const User = require('./models/User');
 const Joke = require('./models/Joke');
 const connectDB = require('./config/database');
+const Rating = require('./models/Rating');
 
 const app = express();
 const http = require('http').createServer(app);
@@ -64,6 +65,16 @@ io.on('connection', (socket) => {
         console.log('User disconnected');
     });
 });
+
+// Authentication middleware
+const isAuthenticated = (req, res, next) => {
+    if (req.session.userId) {
+        req.user = { _id: req.session.userId };
+        next();
+    } else {
+        res.redirect('/login');
+    }
+};
 
 // Routes
 app.get('/', (req, res) => {
@@ -159,79 +170,60 @@ app.get('/jokes', async (req, res) => {
     }
 });
 
-app.post('/rate-joke', async (req, res) => {
-    console.log('Rating request received:', req.body);
-
-    if (!req.session.userId) {
-        console.log('Rating attempt without authentication');
-        return res.status(401).json({ success: false, error: 'Please login to rate jokes' });
-    }
-
+app.post('/rate-joke', isAuthenticated, async (req, res) => {
     try {
         const { jokeId, rating } = req.body;
-        console.log('Processing rating:', { jokeId, rating, userId: req.session.userId });
+        console.log('Behandler vurdering:', { jokeId, rating, userId: req.user._id });
         
-        // Validate rating
+        // Valider vurdering
         const ratingNum = Number(rating);
         if (isNaN(ratingNum) || ratingNum < 1 || ratingNum > 5) {
-            console.log('Invalid rating value:', rating);
-            return res.status(400).json({ success: false, error: 'Rating must be between 1 and 5' });
-        }
-
-        const joke = await Joke.findById(jokeId);
-        if (!joke) {
-            console.log('Joke not found:', jokeId);
-            return res.status(404).json({ success: false, error: 'Joke not found' });
-        }
-        
-        console.log('Current joke ratings:', joke.ratings);
-        
-        const existingRatingIndex = joke.ratings.findIndex(r => 
-            r.user.toString() === req.session.userId
-        );
-
-        if (existingRatingIndex > -1) {
-            console.log('Updating existing rating');
-            joke.ratings[existingRatingIndex].score = ratingNum;
-        } else {
-            console.log('Adding new rating');
-            joke.ratings.push({
-                user: req.session.userId,
-                score: ratingNum
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Vurdering må være mellom 1 og 5' 
             });
         }
-        
-        console.log('Saving joke with updated ratings');
-        await joke.save();
-        
-        // Get updated joke to ensure we have the correct average
-        const updatedJoke = await Joke.findById(jokeId);
-        const ratingStats = updatedJoke.getRatingStats();
-        
-        console.log('Updated rating stats:', ratingStats);
-        
-        // Emit the updated rating to all clients viewing this joke
-        io.to(`joke_${jokeId}`).emit('rating update', {
-            jokeId: jokeId,
-            averageRating: ratingStats.averageRating,
-            totalRatings: ratingStats.totalRatings
+
+        // Finn eller opprett vurdering
+        let ratingDoc = await Rating.findOne({ 
+            jokeId: jokeId, 
+            userId: req.user._id 
         });
 
-        console.log('Sending response to client');
+        if (ratingDoc) {
+            ratingDoc.rating = ratingNum;
+        } else {
+            ratingDoc = new Rating({
+                jokeId: jokeId,
+                userId: req.user._id,
+                rating: ratingNum
+            });
+        }
+
+        await ratingDoc.save();
+        
+        // Beregn ny gjennomsnittsvurdering
+        const ratings = await Rating.find({ jokeId });
+        const totalRatings = ratings.length;
+        const averageRating = ratings.reduce((sum, r) => sum + r.rating, 0) / totalRatings;
+
+        // Send oppdatering til alle klienter som ser denne vitsen
+        io.to(`joke_${jokeId}`).emit('rating update', {
+            jokeId,
+            averageRating,
+            totalRatings
+        });
+
         res.json({ 
             success: true, 
-            averageRating: ratingStats.averageRating,
-            totalRatings: ratingStats.totalRatings
+            averageRating,
+            totalRatings
         });
     } catch (error) {
-        console.error('Rating error details:', {
-            error: error.message,
-            stack: error.stack,
-            body: req.body
-        });
+        console.error('Feil ved vurdering:', error);
         res.status(500).json({ 
             success: false, 
-            error: 'Failed to save rating',
+            error: 'Kunne ikke lagre vurdering',
             details: error.message 
         });
     }
@@ -260,22 +252,39 @@ app.post('/toggle-favorite', async (req, res) => {
     }
 });
 
-app.get('/favorites', async (req, res) => {
-    if (!req.session.userId) {
-        return res.redirect('/login');
-    }
-
+app.get('/favorites', isAuthenticated, async (req, res) => {
     try {
-        const user = await User.findById(req.session.userId).populate('favorites');
-        res.render('favorites', { 
-            jokes: user.favorites,
-            title: 'My Favorite Jokes'
+        // Hent brukerens favoritter med vitseinformasjon
+        const user = await User.findById(req.user._id).populate('favorites');
+        const favorites = user.favorites || [];
+
+        // Hent vurderingsdata for hver vits
+        const favoritesWithRatings = await Promise.all(favorites.map(async (joke) => {
+            const ratings = await Rating.find({ jokeId: joke._id });
+            const totalRatings = ratings.length;
+            const averageRating = totalRatings > 0
+                ? ratings.reduce((sum, rating) => sum + rating.rating, 0) / totalRatings
+                : null;
+            
+            return {
+                ...joke.toObject(),
+                totalRatings,
+                averageRating
+            };
+        }));
+
+        res.render('favorites', {
+            title: 'Mine favoritter',
+            favorites: favoritesWithRatings,
+            isAuthenticated: true
         });
     } catch (error) {
-        res.render('favorites', { 
-            error: 'Failed to fetch favorites',
-            jokes: [],
-            title: 'Error'
+        console.error('Feil ved henting av favoritter:', error);
+        res.render('favorites', {
+            title: 'Mine favoritter',
+            error: 'Kunne ikke hente favoritter. Vennligst prøv igjen senere.',
+            favorites: [],
+            isAuthenticated: true
         });
     }
 });

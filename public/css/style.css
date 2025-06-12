@@ -223,7 +223,7 @@ input[type="range"] {
 .login-prompt {
     text-align: center;
     padding: 1rem;
-    background-color: #f8f8f8;
+    background-color: #f8f8f81c;
     border-radius: 4px;
     margin: 1rem 0;
 }
