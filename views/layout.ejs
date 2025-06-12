@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= typeof title !== 'undefined' ? title + ' - Joke Rater' : 'Joke Rater' %></title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <a href="/" class="logo">Joke Rater</a>
+            <div class="nav-links">
+                <% if (isAuthenticated) { %>
+                    <a href="/jokes">Jokes</a>
+                    <a href="/logout">Logout</a>
+                <% } else { %>
+                    <a href="/login">Login</a>
+                    <a href="/register">Register</a>
+                <% } %>
+            </div>
+        </div>
+    </nav>
+    <main>
+        <%- body %>
+    </main>
+    <script src="/js/main.js"></script>
+</body>
+</html> 

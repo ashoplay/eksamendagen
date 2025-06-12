@@ -1,0 +1,35 @@
+<div class="joke-container">
+    <% if (typeof error !== 'undefined') { %>
+        <div class="error-message"><%= error %></div>
+    <% } else { %>
+        <div class="joke-card">
+            <div class="joke-setup">
+                <%= joke.setup %>
+            </div>
+            <div class="joke-punchline" id="punchline">
+                <button onclick="revealPunchline()" id="reveal-btn">Reveal Punchline</button>
+                <p class="hidden" id="punchline-text"><%= joke.punchline %></p>
+            </div>
+            <div class="rating-section">
+                <% if (isAuthenticated) { %>
+                    <div class="rating-slider">
+                        <label for="rating">Rate this joke (1-10):</label>
+                        <input type="range" id="rating" min="1" max="10" value="<%= userRating || 5 %>" step="1">
+                        <span id="rating-value"><%= userRating || 5 %></span>
+                    </div>
+                    <button onclick="submitRating('<%= joke._id %>')" id="rate-btn">Submit Rating</button>
+                    <div class="average-rating" id="average-rating">
+                        <% if (joke.ratings && joke.ratings.length > 0) { %>
+                            Average Rating: <%= joke.averageRating %>
+                        <% } %>
+                    </div>
+                <% } else { %>
+                    <p class="login-prompt">
+                        <a href="/login">Login</a> or <a href="/register">Register</a> to rate jokes and see average ratings!
+                    </p>
+                <% } %>
+            </div>
+            <button onclick="location.reload()" class="next-joke-btn">Next Joke</button>
+        </div>
+    <% } %>
+</div> 
